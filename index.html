@@ -21,8 +21,8 @@
         label { font-weight: bold; font-size: 14px; color: #333; display: block; margin-top: 10px; }
         .error-text { color: red; margin-bottom: 10px; font-size: 14px; font-weight: bold; text-align: center; }
         .header-flex { display: flex; justify-content: space-between; align-items: center; }
-        .bg-readonly { background-color: #e9ecef; }
         #preview-foto { max-width: 100%; border-radius: 5px; margin-top: 10px; }
+        .grup-box { background-color: #eef2f3; padding: 15px; border-radius: 5px; margin-bottom: 10px; border: 1px dashed #bbb;}
     </style>
 </head>
 <body>
@@ -59,18 +59,20 @@
         <input type="date" id="form-tanggal">
 
         <label>Jenis Arus Kas:</label>
-        <select id="form-jenis" onchange="updateFormDinamis()">
+        <select id="form-jenis" onchange="gantiJenis()">
             <option value="Pendapatan">Pendapatan</option>
             <option value="Pengeluaran">Pengeluaran</option>
         </select>
 
         <label>Kategori Transaksi:</label>
-        <select id="form-kategori" onchange="updateFormDinamis()"></select>
+        <select id="form-kategori" onchange="gantiKategori()"></select>
 
         <label id="label-nama-pihak">Nama Pembayar:</label>
-        <input type="text" id="form-nama-pihak" placeholder="Contoh: Bpk. Wayan / Toko Bangunan">
+        <input type="text" id="form-nama-pihak" placeholder="Contoh: Bpk. Wayan">
 
-        <div id="grup-iuran" class="hidden">
+        <div id="grup-iuran" class="hidden grup-box">
+            <h4 style="margin-top:0; color:#2196F3;">Detail Iuran Wajib</h4>
+            
             <label>Pilih Anggota (Opsional):</label>
             <select id="form-anggota"></select>
             

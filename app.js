@@ -1,7 +1,8 @@
 // ==========================================
 // 1. KONFIGURASI UTAMA
 // ==========================================
-const GAS_URL = "https://script.google.com/macros/s/AKfycbyYVyWUnwtZaY1IeI4EigdtxcvjBYmqHIQlKhZzs0UcIrU5nSU-ikafbvpyUgsY3roh/exec"; 
+// PASTE URL WEB APP BARU ANDA DI SINI:
+const GAS_URL = "PASTE_URL_WEB_APP_ANDA_DISINI"; 
 
 let currentUserRole = "";
 let dataKategori = [];
@@ -10,6 +11,7 @@ let globalDataTransaksi = [];
 let totalDataTerakhir = 0; 
 let base64FotoTemp = ""; 
 let intervalNotif; 
+let daftarKolektif = []; // Menampung keranjang kolektif
 
 const DAFTAR_KELOMPOK = [
     "01 - GEDE SURATHA",
@@ -108,7 +110,7 @@ function bukaModal(id) { document.getElementById(id).classList.remove('hidden');
 function tutupModal(id) { document.getElementById(id).classList.add('hidden'); }
 
 // ==========================================
-// 3. DATA SERVER & SINKRONISASI
+// 3. DATA SERVER
 // ==========================================
 function sinkronisasiManual() {
     const ikon = document.querySelector('.icon-btn[title="Refresh Data"]');
@@ -220,10 +222,12 @@ function tanyaBayarIuran(idAnggota, nama, kelKeluarga) {
         document.getElementById('form-kategori').value = "Iuran Wajib";
         gantiKategori(); 
         
+        document.getElementById('form-kategori-iuran').value = "Personal";
+        gantiKategoriIuran();
+        
         document.getElementById('form-kelompok-keluarga').value = kelKeluarga;
         filterAnggotaForm();
         
-        // Timeout pendek agar filterAnggotaForm() selesai memuat option sebelum .value di set
         setTimeout(() => {
             document.getElementById('form-anggota').value = idAnggota;
             autofillAnggota();
@@ -288,16 +292,14 @@ async function tarikDataReferensi() {
 }
 
 // ==========================================
-// 5. FORM TRANSAKSI DINAMIS 
+// 5. FORM TRANSAKSI DINAMIS & LOGIKA KOLEKTIF
 // ==========================================
 function bukaFormTransaksi() {
     navigasi('form-screen');
     document.getElementById('form-tanggal').valueAsDate = new Date();
-    document.getElementById('form-nominal').value = "";
     document.getElementById('form-keterangan').value = "";
     document.getElementById('form-nama-pihak').value = "";
-    document.getElementById('form-jumlah-periode').value = "1"; 
-    document.getElementById('form-jenis-kk').value = ""; 
+    
     document.getElementById('form-foto').value = "";
     document.getElementById('preview-foto').classList.add('hidden');
     base64FotoTemp = "";
@@ -337,13 +339,36 @@ function gantiKategori() {
     
     if (kategori === "Iuran Wajib") {
         grupIuran.classList.remove('hidden');
+        document.getElementById('form-kategori-iuran').value = "Personal";
+        gantiKategoriIuran(); 
     } else {
         grupIuran.classList.add('hidden');
-        document.getElementById('form-jenis-kk').value = "";
-        document.getElementById('form-jumlah-periode').value = "1";
-        document.getElementById('form-nominal').value = "";
-        document.getElementById('form-anggota').value = "";
-        document.getElementById('hint-nominal').classList.add('hidden'); 
+        document.getElementById('box-total-bayar').classList.add('hidden');
+        resetInputAnggota();
+    }
+}
+
+function gantiKategoriIuran() {
+    const katIuran = document.getElementById('form-kategori-iuran').value;
+    const btnTambah = document.getElementById('btn-tambah-kolektif');
+    const boxDaftar = document.getElementById('box-daftar-kolektif');
+    const boxTotal = document.getElementById('box-total-bayar');
+    
+    // Reset Data Anggota yang sedang aktif di Input
+    resetInputAnggota();
+    
+    if (katIuran === "Kolektif") {
+        btnTambah.classList.remove('hidden');
+        boxDaftar.classList.remove('hidden');
+        boxTotal.classList.remove('hidden');
+        daftarKolektif = []; // Kosongkan keranjang jika pindah ke Kolektif
+        renderDaftarKolektif();
+    } else {
+        // Personal
+        btnTambah.classList.add('hidden');
+        boxDaftar.classList.add('hidden');
+        boxTotal.classList.add('hidden');
+        daftarKolektif = [];
     }
 }
 
@@ -365,11 +390,15 @@ function filterAnggotaForm() {
 
 function autofillAnggota() {
     const idDipilih = document.getElementById('form-anggota').value;
+    const katIuran = document.getElementById('form-kategori-iuran').value;
     if(!idDipilih) return;
 
     const anggota = dataAnggota.find(a => a.id_anggota === idDipilih);
     if(anggota) {
-        document.getElementById('form-nama-pihak').value = anggota.nama_anggota;
+        // Jika mode personal, otomatis isi nama penyetor
+        if (katIuran === "Personal") {
+            document.getElementById('form-nama-pihak').value = anggota.nama_anggota;
+        }
         document.getElementById('form-jenis-kk').value = anggota.status_kk;
         document.getElementById('form-jumlah-periode').value = "1";
         kalkulasiNominalKK();
@@ -383,37 +412,93 @@ function kalkulasiNominalKK() {
     const hintNominal = document.getElementById('hint-nominal');
     const jenisKK = document.getElementById('form-jenis-kk').value;
     
-    // Hilangkan semua spasi agar matching PWA kebal dari error ketik di sheet (contoh: "KK 01" jadi "KK01")
     let keyKK = jenisKK ? jenisKK.toString().toUpperCase().replace(/\s+/g, '') : "";
-    
-    const tarifKK = { 
-        "KK1": 50000, "KK01": 50000, "KK2": 100000, "KK02": 100000, 
-        "DUDA1": 50000, "DUDA01": 50000, "DUDA2": 100000, "DUDA02": 100000, 
-        "JANDA": 25000, "BUJANG": 25000 
-    };
+    const tarifKK = { "KK1": 50000, "KK01": 50000, "KK2": 100000, "KK02": 100000, "DUDA1": 50000, "DUDA01": 50000, "DUDA2": 100000, "DUDA02": 100000, "JANDA": 25000, "BUJANG": 25000 };
 
     if (tarifKK[keyKK]) {
         formNominal.value = tarifKK[keyKK] * jumlahPeriode;
-        if (jumlahPeriode > 1) {
-            hintNominal.innerText = `* Tarif Rp ${tarifKK[keyKK].toLocaleString('id-ID')} x ${jumlahPeriode} periode. Bisa diedit manual.`;
-        } else {
-            hintNominal.innerText = "* Bisa diedit manual jika pembayaran kolektif.";
-        }
         hintNominal.classList.remove('hidden'); 
-    } else {
-        // Jika tidak masuk daftar (aneh), fallback menggunakan data Iuran dari Sheet
-        if(idDipilih) {
-            const anggota = dataAnggota.find(a => a.id_anggota === idDipilih);
-            if(anggota && anggota.iuran) {
-                formNominal.value = anggota.iuran * jumlahPeriode;
-                hintNominal.innerText = `* Diambil dari database: Rp ${anggota.iuran.toLocaleString('id-ID')} x ${jumlahPeriode}. Bisa diedit.`;
-                hintNominal.classList.remove('hidden');
-                return;
-            }
+    } else if(idDipilih) {
+        const anggota = dataAnggota.find(a => a.id_anggota === idDipilih);
+        if(anggota && anggota.iuran) {
+            formNominal.value = anggota.iuran * jumlahPeriode;
+            hintNominal.classList.remove('hidden');
+            return;
         }
+    } else {
         formNominal.value = "";
         hintNominal.classList.add('hidden');
     }
+}
+
+function resetInputAnggota() {
+    document.getElementById('form-anggota').value = "";
+    document.getElementById('form-jenis-kk').value = "";
+    document.getElementById('form-jumlah-periode').value = "1";
+    document.getElementById('form-nominal').value = "";
+}
+
+// LOGIKA KOLEKTIF (KERANJANG)
+function tambahKeKolektif() {
+    const idDipilih = document.getElementById('form-anggota').value;
+    const nominal = document.getElementById('form-nominal').value;
+    const periode = document.getElementById('form-jumlah-periode').value;
+    
+    if(!idDipilih || !nominal) { alert("Pilih Krama dan pastikan nominal terisi!"); return; }
+
+    const anggota = dataAnggota.find(a => a.id_anggota === idDipilih);
+    
+    // Cek apakah sudah ada di keranjang
+    if(daftarKolektif.find(d => d.id_anggota === anggota.id_anggota)) {
+        alert("Anggota ini sudah ada di daftar kolektif!"); return;
+    }
+
+    let kramaObj = {
+        id_anggota: anggota.id_anggota,
+        nama_pihak: anggota.nama_anggota,
+        kelompok: anggota.kelompok,
+        jenis_kk: anggota.status_kk,
+        nominal: nominal,
+        periode: periode,
+        // Keterangan khusus per orang
+        keterangan: (periode > 1) ? `[${periode} Prd]` : "" 
+    };
+
+    daftarKolektif.push(kramaObj);
+    renderDaftarKolektif();
+    resetInputAnggota(); // Bersihkan form agar bisa tambah orang lain
+}
+
+function hapusKolektif(index) {
+    daftarKolektif.splice(index, 1);
+    renderDaftarKolektif();
+}
+
+function renderDaftarKolektif() {
+    const tbody = document.getElementById('list-kolektif');
+    const labelTotal = document.getElementById('label-total-kolektif');
+    tbody.innerHTML = "";
+    
+    let totalNominal = 0;
+
+    if (daftarKolektif.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='4' style='text-align:center;'>Belum ada krama yang ditambahkan.</td></tr>";
+    } else {
+        daftarKolektif.forEach((item, index) => {
+            totalNominal += parseFloat(item.nominal);
+            let nRp = new Intl.NumberFormat('id-ID').format(item.nominal);
+            tbody.innerHTML += `
+                <tr>
+                    <td style="font-weight:600;">${item.nama_pihak}</td>
+                    <td>${item.periode}x</td>
+                    <td style="text-align:right;">${nRp}</td>
+                    <td style="text-align:center;"><button class="btn-danger" style="margin:0; padding:4px 8px; font-size:10px;" onclick="hapusKolektif(${index})">X</button></td>
+                </tr>
+            `;
+        });
+    }
+
+    labelTotal.innerText = "Rp " + new Intl.NumberFormat('id-ID').format(totalNominal);
 }
 
 // ==========================================
@@ -444,25 +529,51 @@ function previewFoto(event) {
 
 async function simpanDataTransaksi() {
     const kategoriForm = document.getElementById('form-kategori').value;
-    const periodeForm = parseInt(document.getElementById('form-jumlah-periode').value) || 1;
+    const katIuran = document.getElementById('form-kategori-iuran').value;
+    const namaPenyetor = document.getElementById('form-nama-pihak').value.trim();
     let keteranganForm = document.getElementById('form-keterangan').value.trim();
 
-    if (kategoriForm === "Iuran Wajib" && periodeForm > 1) { keteranganForm = `[Bayar ${periodeForm} Periode] ` + keteranganForm; }
+    // Validasi Umum
+    if (!document.getElementById('form-tanggal').value || !namaPenyetor) { 
+        alert("Tanggal dan Nama Penyetor wajib diisi!"); return; 
+    }
 
-    const payload = {
-        role: currentUserRole, tanggal: document.getElementById('form-tanggal').value,
-        jenis: document.getElementById('form-jenis').value, kategori: kategoriForm,
-        nama_pihak: document.getElementById('form-nama-pihak').value.trim(),
-        id_anggota: document.getElementById('form-anggota').value,
-        kelompok: document.getElementById('form-kelompok-keluarga').value, 
-        jenis_kk: document.getElementById('form-jenis-kk').value,
+    let payload = {
+        role: currentUserRole, 
+        tanggal: document.getElementById('form-tanggal').value,
+        jenis: document.getElementById('form-jenis').value, 
+        kategori: kategoriForm,
+        nama_pihak: namaPenyetor,
         jenis_pembayaran: document.getElementById('form-pembayaran').value,
-        nominal: document.getElementById('form-nominal').value,
-        keterangan: keteranganForm, foto_base64: base64FotoTemp 
+        keterangan: keteranganForm, // Bisa digunakan sebagai ket. umum
+        foto_base64: base64FotoTemp 
     };
 
-    if (!payload.tanggal || !payload.nominal || !payload.nama_pihak) { alert("Tanggal, Nama, dan Nominal wajib diisi!"); return; }
-    
+    if (kategoriForm === "Iuran Wajib") {
+        if (katIuran === "Kolektif") {
+            if(daftarKolektif.length === 0) { alert("Daftar Kolektif masih kosong!"); return; }
+            payload.kategori_pembayaran = "Kolektif";
+            payload.data_kolektif = daftarKolektif; // Kirim array
+            payload.keterangan_umum = keteranganForm;
+        } else {
+            // Personal
+            const periodeForm = parseInt(document.getElementById('form-jumlah-periode').value) || 1;
+            if (periodeForm > 1) { keteranganForm = `[Bayar ${periodeForm} Periode] ` + keteranganForm; }
+            
+            payload.id_anggota = document.getElementById('form-anggota').value;
+            payload.kelompok = document.getElementById('form-kelompok-keluarga').value; 
+            payload.jenis_kk = document.getElementById('form-jenis-kk').value;
+            payload.nominal = document.getElementById('form-nominal').value;
+            payload.keterangan = keteranganForm;
+
+            if (!payload.nominal || !payload.id_anggota) { alert("Pilih Krama dan Nominal wajib diisi!"); return; }
+        }
+    } else {
+        // Pengeluaran / Pendapatan Biasa
+        payload.nominal = document.getElementById('form-nominal').value;
+        if (!payload.nominal) { alert("Nominal wajib diisi!"); return; }
+    }
+
     const btnSimpan = document.getElementById('btn-simpan');
     btnSimpan.innerText = "⏳ Sedang Mengirim Data..."; btnSimpan.disabled = true;
 
@@ -473,7 +584,7 @@ async function simpanDataTransaksi() {
         });
         const result = await res.json();
         if (result.status === 'ok' && result.data.status === 'success') {
-            alert("✅ Transaksi & Foto berhasil disimpan!");
+            alert("✅ Transaksi & Foto berhasil disimpan!\n\n" + (result.data.message || ""));
             sinkronisasiManual(); navigasi('main-menu-screen'); 
         } else { alert("Gagal menyimpan: " + result.data.message); }
     } catch (error) { alert("Error jaringan. Transaksi gagal dikirim."); } 

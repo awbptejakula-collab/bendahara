@@ -11,7 +11,6 @@ let totalDataTerakhir = 0;
 let base64FotoTemp = ""; 
 let intervalNotif; 
 
-// KELOMPOK DIPATENKAN SESUAI REQUEST
 const DAFTAR_KELOMPOK = [
     "01 - GEDE SURATHA",
     "02 - MADE CAHYADI",
@@ -109,7 +108,7 @@ function bukaModal(id) { document.getElementById(id).classList.remove('hidden');
 function tutupModal(id) { document.getElementById(id).classList.add('hidden'); }
 
 // ==========================================
-// 3. DATA SERVER
+// 3. DATA SERVER & SINKRONISASI
 // ==========================================
 function sinkronisasiManual() {
     const ikon = document.querySelector('.icon-btn[title="Refresh Data"]');
@@ -117,6 +116,7 @@ function sinkronisasiManual() {
     setTimeout(() => ikon.style.transform = "rotate(0deg)", 500);
     document.getElementById('notif-dot').classList.add('hidden'); 
     loadDataServer(false); 
+    tarikDataReferensi(); // Tarik ulang referensi anggota agar PWA sinkron dengan onEdit Sheet
 }
 
 function cekNotifikasiAlert() {
@@ -203,7 +203,6 @@ function renderTabelIuran() {
     });
 }
 
-// SMART REDIRECT: Tanya & Lempar ke Form Pembayaran
 function tanyaBayarIuran(idAnggota, nama, kelKeluarga) {
     let totalBayar = 0;
     globalDataTransaksi.forEach(tr => {
@@ -212,7 +211,7 @@ function tanyaBayarIuran(idAnggota, nama, kelKeluarga) {
         }
     });
     
-    let msg = `Krama: ${nama}\nTotal Pembayaran Iuran saat ini: Rp ${new Intl.NumberFormat('id-ID').format(totalBayar)}\n\nLanjutkan ke Pembayaran Iuran Wajib?`;
+    let msg = `Krama: ${nama}\nTotal Pembayaran Iuran di PWA saat ini: Rp ${new Intl.NumberFormat('id-ID').format(totalBayar)}\n\nLanjutkan ke Pembayaran Iuran Wajib?`;
     
     if (confirm(msg)) {
         bukaFormTransaksi();
@@ -221,11 +220,9 @@ function tanyaBayarIuran(idAnggota, nama, kelKeluarga) {
         document.getElementById('form-kategori').value = "Iuran Wajib";
         gantiKategori(); 
         
-        // Pilih dropdown grup
         document.getElementById('form-kelompok-keluarga').value = kelKeluarga;
         filterAnggotaForm();
         
-        // Pilih member spesifik
         document.getElementById('form-anggota').value = idAnggota;
         autofillAnggota();
     }
@@ -238,7 +235,11 @@ function renderTabelAnggota() {
 
     let filteredData = dataAnggota;
     if (filter !== "Semua") {
-        filteredData = dataAnggota.filter(a => `${a.kelompok} - ${a.keluarga}` === filter);
+        // Cocokkan data PWA dengan format filter
+        filteredData = dataAnggota.filter(a => {
+            let combined = a.kelompok + " - " + a.keluarga;
+            return combined === filter;
+        });
     }
 
     if (filteredData.length === 0) {
@@ -277,7 +278,6 @@ async function tarikDataReferensi() {
             let selForm = document.getElementById('form-kelompok-keluarga');
             selForm.innerHTML = '<option value="">-- Pilih Kelompok & Keluarga --</option>';
             
-            // Isi Menggunakan DAFTAR_KELOMPOK yang dipatenkan
             DAFTAR_KELOMPOK.forEach(item => {
                 selFilter.innerHTML += `<option value="${item}">${item}</option>`;
                 selForm.innerHTML += `<option value="${item}">${item}</option>`;

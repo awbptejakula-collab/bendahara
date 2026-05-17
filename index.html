@@ -8,23 +8,21 @@
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f7f6; }
         .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .hidden { display: none; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #4CAF50; color: white; }
-        button { padding: 10px; margin-top: 10px; width: 100%; font-size: 16px; cursor: pointer; border-radius: 4px; }
-        .btn-primary { background-color: #4CAF50; color: white; border: none; }
+        button, select { padding: 10px; margin-top: 10px; width: 100%; font-size: 16px; cursor: pointer; border-radius: 4px; box-sizing: border-box; }
+        .btn-primary { background-color: #4CAF50; color: white; border: none; font-weight: bold; }
+        .btn-secondary { background-color: #2196F3; color: white; border: none; font-weight: bold; }
+        .btn-danger { background-color: #f44336; color: white; border: none; }
         
-        input[type="text"], input[type="password"] { 
-            width: 100%; 
-            padding: 10px; 
-            margin-top: 5px; 
-            margin-bottom: 15px; 
-            border: 1px solid #ccc; 
-            border-radius: 4px; 
-            box-sizing: border-box; 
-            font-size: 16px; 
+        input[type="text"], input[type="password"], input[type="number"], input[type="date"] { 
+            width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 10px; 
+            border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; 
         }
+        label { font-weight: bold; font-size: 14px; color: #333; }
         .error-text { color: red; margin-bottom: 10px; font-size: 14px; font-weight: bold; text-align: center; }
+        .header-flex { display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
@@ -44,24 +42,65 @@
     </div>
 
     <div id="dashboard-screen" class="hidden">
-        <h2 id="welcome-text">Buku Kas Tunggal</h2>
-        <button class="btn-primary" onclick="loadBukuKas()">🔄 Refresh Data Kas</button>
-        <button onclick="logout()">Keluar</button>
-
-        <p id="loading-text" class="hidden"><i>Mengambil data dari server...</i></p>
+        <div class="header-flex">
+            <h2 id="welcome-text">Buku Kas</h2>
+            <button class="btn-danger" style="width: auto; padding: 5px 15px;" onclick="logout()">Keluar</button>
+        </div>
         
-        <table>
-            <thead>
-                <tr>
-                    <th>Tanggal</th>
-                    <th>Kategori</th>
-                    <th>Mas/Kel</th>
-                    <th>Nominal</th>
-                </tr>
-            </thead>
-            <tbody id="tabel-kas">
-                </tbody>
-        </table>
+        <button class="btn-secondary" id="btn-tambah" onclick="bukaFormTransaksi()">➕ Tambah Transaksi</button>
+        <button class="btn-primary" onclick="loadBukuKas()">🔄 Refresh Tabel Kas</button>
+
+        <p id="loading-text" class="hidden" style="text-align: center;"><i>Memuat data...</i></p>
+        
+        <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Kategori</th>
+                        <th>Mas/Kel</th>
+                        <th>Nominal</th>
+                    </tr>
+                </thead>
+                <tbody id="tabel-kas"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="form-screen" class="hidden">
+        <h2>Input Transaksi Baru</h2>
+        
+        <label>Tanggal Transaksi:</label>
+        <input type="date" id="form-tanggal">
+
+        <label>Jenis Arus Kas:</label>
+        <select id="form-jenis" onchange="updateDropdownKategori()">
+            <option value="Pendapatan">Pendapatan</option>
+            <option value="Pengeluaran">Pengeluaran</option>
+        </select>
+
+        <label>Kategori Transaksi:</label>
+        <select id="form-kategori" onchange="cekTampilAnggota()"></select>
+
+        <div id="grup-anggota" class="hidden">
+            <label>Pilih Anggota (Yang Membayar):</label>
+            <select id="form-anggota"></select>
+        </div>
+
+        <label>Jenis Pembayaran:</label>
+        <select id="form-pembayaran">
+            <option value="Tunai">Tunai (Cash / Kotak Amal)</option>
+            <option value="Transfer">Transfer Bank</option>
+        </select>
+
+        <label>Nominal (Rp):</label>
+        <input type="number" id="form-nominal" placeholder="Contoh: 50000 (Tanpa titik)">
+
+        <label>Keterangan (Opsional):</label>
+        <input type="text" id="form-keterangan" placeholder="Contoh: Iuran bulan Mei">
+
+        <button class="btn-primary" id="btn-simpan" onclick="simpanDataTransaksi()">💾 Simpan Transaksi</button>
+        <button onclick="tutupFormTransaksi()">Batal</button>
     </div>
 </div>
 

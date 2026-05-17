@@ -41,11 +41,8 @@
         .screen-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
         .screen-title h2 { margin: 0; font-size: 18px; color: var(--primary-dark); }
         #preview-foto { max-width: 100%; border-radius: 8px; margin-top: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        
-        /* Modal Float Styles */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: flex; justify-content: center; align-items: center; padding: 15px; }
         .modal-card { background: white; width: 100%; max-width: 400px; border-radius: 12px; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-        
         .krama-link { color: var(--secondary); text-decoration: underline; cursor: pointer; font-weight: bold; }
     </style>
 </head>
@@ -93,7 +90,7 @@
             <option value="Semua">Tampilkan Semua</option>
             </select>
 
-        <p style="font-size: 11px; color: #888; margin-bottom: 5px;">*Klik Nama Krama untuk melihat info iuran.</p>
+        <p style="font-size: 11px; color: #888; margin-bottom: 5px;">*Klik Nama Krama untuk melihat riwayat dan bayar iuran.</p>
         <div style="overflow-x:auto;">
             <table>
                 <thead><tr><th>Nama Krama</th><th>Keberadaan</th><th>Jenis KK</th><th>Nominal Iuran</th><th>Status Aktif</th></tr></thead>
@@ -159,7 +156,7 @@
             <label style="margin-top: 0;">Kelompok - Keluarga:</label>
             <select id="form-kelompok-keluarga" onchange="filterAnggotaForm()">
                 <option value="">-- Pilih Kelompok & Keluarga --</option>
-                </select>
+            </select>
 
             <label>Pilih Krama / Anggota:</label>
             <select id="form-anggota" onchange="autofillAnggota()">
@@ -196,7 +193,7 @@
         <img id="preview-foto" class="hidden">
 
         <label>Keterangan Tambahan:</label>
-        <input type="text" id="form-keterangan" placeholder="Contoh: Titipan iuran...">
+        <input type="text" id="form-keterangan" placeholder="Contoh: Titipan iuran Made...">
 
         <button class="btn-primary" id="btn-simpan" onclick="simpanDataTransaksi()">💾 Simpan Transaksi</button>
         <button class="btn-danger" style="background: #e0e0e0; color: #333;" onclick="navigasi('main-menu-screen')">Batal</button>

@@ -3,18 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PWA Keuangan AWBP</title>
+    <title>PWA Keuangan Banjar</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 15px; background-color: #f4f7f6; }
         .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .hidden { display: none !important; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: top; }
         th { background-color: #4CAF50; color: white; }
         button, select { padding: 12px; margin-top: 10px; width: 100%; font-size: 15px; cursor: pointer; border-radius: 5px; box-sizing: border-box; }
         .btn-primary { background-color: #4CAF50; color: white; border: none; font-weight: bold; }
         .btn-secondary { background-color: #2196F3; color: white; border: none; font-weight: bold; }
         .btn-danger { background-color: #f44336; color: white; border: none; }
+        .btn-menu { padding: 15px; font-size: 16px; margin-bottom: 10px; }
         input[type="text"], input[type="password"], input[type="number"], input[type="date"], input[type="file"] { 
             width: 100%; padding: 12px; margin-top: 5px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 15px; 
         }
@@ -24,6 +25,7 @@
         #preview-foto { max-width: 100%; border-radius: 5px; margin-top: 10px; }
         .grup-box { background-color: #eef2f3; padding: 15px; border-radius: 5px; margin-bottom: 10px; border: 1px dashed #bbb;}
         .hint-text { color: #ff9800; font-size: 12px; font-weight: bold; margin-top: -5px; margin-bottom: 10px; display: block; }
+        .badge-sumber { display: inline-block; background: #e0e0e0; color: #333; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-top: 4px; }
     </style>
 </head>
 <body>
@@ -37,18 +39,41 @@
         <button class="btn-primary" onclick="prosesLogin()">Masuk</button>
     </div>
 
+    <div id="main-menu-screen" class="hidden">
+        <h2>Menu Utama <br><small style="color: #666; font-size: 14px;" id="menu-role-text"></small></h2>
+        <button class="btn-primary btn-menu" onclick="navigasi('dashboard-screen')">Buku Kas Tunggal</button>
+        <button class="btn-secondary btn-menu" onclick="navigasi('iuran-screen')">Daftar Iuran Wajib</button>
+        <button class="btn-secondary btn-menu" id="btn-menu-tambah" onclick="bukaFormTransaksi()">➕ Tambah Transaksi</button>
+        <button class="btn-danger btn-menu" onclick="logout()">Keluar</button>
+    </div>
+
     <div id="dashboard-screen" class="hidden">
         <div class="header-flex">
-            <h2 id="welcome-text">Buku Kas</h2>
-            <button class="btn-danger" style="width: auto; padding: 8px 15px;" onclick="logout()">Keluar</button>
+            <h2>Buku Kas</h2>
+            <button class="btn-danger" style="width: auto; padding: 8px 15px;" onclick="navigasi('main-menu-screen')">Kembali</button>
         </div>
-        <button class="btn-secondary" id="btn-tambah" onclick="bukaFormTransaksi()">➕ Tambah Transaksi</button>
-        <button class="btn-primary" onclick="loadBukuKas()">🔄 Refresh Tabel Kas</button>
-        <p id="loading-text" class="hidden" style="text-align: center;"><i>Memuat data...</i></p>
+        <button class="btn-primary" onclick="loadDataServer()">🔄 Refresh Data Server</button>
+        <p id="loading-text-kas" class="hidden" style="text-align: center; color: #666;"><i>Memuat data...</i></p>
         <div style="overflow-x:auto;">
             <table>
-                <thead><tr><th>Tanggal</th><th>Keterangan</th><th>Mas/Kel</th><th>Nominal</th></tr></thead>
+                <thead><tr><th>Tanggal</th><th>Keterangan</th><th>Nominal</th></tr></thead>
                 <tbody id="tabel-kas"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="iuran-screen" class="hidden">
+        <div class="header-flex">
+            <h2>Daftar Iuran</h2>
+            <button class="btn-danger" style="width: auto; padding: 8px 15px;" onclick="navigasi('main-menu-screen')">Kembali</button>
+        </div>
+        <p style="font-size: 13px; color: #555;">Daftar pembayaran iuran wajib dari Bendahara 1 & 2 untuk mencegah dobel catat.</p>
+        <button class="btn-primary" onclick="loadDataServer()">🔄 Refresh Data Server</button>
+        <p id="loading-text-iuran" class="hidden" style="text-align: center; color: #666;"><i>Memuat data...</i></p>
+        <div style="overflow-x:auto;">
+            <table>
+                <thead><tr><th>Tanggal</th><th>Anggota/Pihak</th><th>Nominal</th></tr></thead>
+                <tbody id="tabel-iuran"></tbody>
             </table>
         </div>
     </div>
@@ -99,17 +124,12 @@
 
             <label>Jumlah Periode (Pembayaran):</label>
             <select id="form-jumlah-periode" onchange="kalkulasiNominalKK()">
-                <option value="1">1 Periode (Hanya Saat Ini)</option>
-                <option value="2">2 Periode (Rapel/Tunggakan)</option>
-                <option value="3">3 Periode (Rapel/Tunggakan)</option>
+                <option value="1">1 Periode (Saat Ini)</option>
+                <option value="2">2 Periode (Rapel)</option>
+                <option value="3">3 Periode (Rapel)</option>
                 <option value="4">4 Periode</option>
                 <option value="5">5 Periode</option>
                 <option value="6">6 Periode (Setengah Tahun)</option>
-                <option value="7">7 Periode</option>
-                <option value="8">8 Periode</option>
-                <option value="9">9 Periode</option>
-                <option value="10">10 Periode</option>
-                <option value="11">11 Periode</option>
                 <option value="12">12 Periode (Satu Tahun)</option>
             </select>
         </div>
@@ -122,17 +142,17 @@
 
         <label>Nominal (Rp):</label>
         <input type="number" id="form-nominal" placeholder="Isi angka tanpa titik">
-        <small id="hint-nominal" class="hidden hint-text">* Nominal terhitung otomatis. Anda masih bisa mengubahnya manual jika ada pembayaran kolektif.</small>
+        <small id="hint-nominal" class="hidden hint-text">* Bisa diedit manual jika pembayaran kolektif.</small>
 
         <label>Foto Bukti / Nota (Wajib/Opsional):</label>
         <input type="file" id="form-foto" accept="image/*" capture="environment" onchange="previewFoto(event)">
         <img id="preview-foto" class="hidden">
 
         <label>Keterangan Tambahan:</label>
-        <input type="text" id="form-keterangan" placeholder="Contoh: Titipan iuran Made, dsb...">
+        <input type="text" id="form-keterangan" placeholder="Contoh: Titipan iuran Made...">
 
         <button class="btn-primary" id="btn-simpan" onclick="simpanDataTransaksi()">💾 Simpan Transaksi</button>
-        <button class="btn-danger" onclick="tutupFormTransaksi()">Batal</button>
+        <button class="btn-danger" onclick="navigasi('main-menu-screen')">Batal</button>
     </div>
 </div>
 

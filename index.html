@@ -23,6 +23,7 @@
         .header-flex { display: flex; justify-content: space-between; align-items: center; }
         #preview-foto { max-width: 100%; border-radius: 5px; margin-top: 10px; }
         .grup-box { background-color: #eef2f3; padding: 15px; border-radius: 5px; margin-bottom: 10px; border: 1px dashed #bbb;}
+        .hint-text { color: #ff9800; font-size: 12px; font-weight: bold; margin-top: -5px; margin-bottom: 10px; display: block; }
     </style>
 </head>
 <body>
@@ -67,14 +68,11 @@
         <label>Kategori Transaksi:</label>
         <select id="form-kategori" onchange="gantiKategori()"></select>
 
-        <label id="label-nama-pihak">Nama Pembayar:</label>
+        <label id="label-nama-pihak">Nama Pembayar / Penyetor:</label>
         <input type="text" id="form-nama-pihak" placeholder="Contoh: Bpk. Wayan">
 
         <div id="grup-iuran" class="hidden grup-box">
             <h4 style="margin-top:0; color:#2196F3;">Detail Iuran Wajib</h4>
-            
-            <label>Pilih Anggota (Opsional):</label>
-            <select id="form-anggota"></select>
             
             <label>Kelompok / Tempek:</label>
             <select id="form-kelompok">
@@ -84,6 +82,9 @@
                 <option value="Tempek Kelod">Tempek Kelod</option>
                 <option value="Tempek Kaja">Tempek Kaja</option>
             </select>
+
+            <label>Pilih Anggota (Opsional):</label>
+            <select id="form-anggota"></select>
 
             <label>Jenis KK:</label>
             <select id="form-jenis-kk" onchange="kalkulasiNominalKK()">
@@ -95,6 +96,22 @@
                 <option value="Janda">Janda (Rp 25.000)</option>
                 <option value="Bujang">Bujang (Rp 25.000)</option>
             </select>
+
+            <label>Jumlah Periode (Pembayaran):</label>
+            <select id="form-jumlah-periode" onchange="kalkulasiNominalKK()">
+                <option value="1">1 Periode (Hanya Saat Ini)</option>
+                <option value="2">2 Periode (Rapel/Tunggakan)</option>
+                <option value="3">3 Periode (Rapel/Tunggakan)</option>
+                <option value="4">4 Periode</option>
+                <option value="5">5 Periode</option>
+                <option value="6">6 Periode (Setengah Tahun)</option>
+                <option value="7">7 Periode</option>
+                <option value="8">8 Periode</option>
+                <option value="9">9 Periode</option>
+                <option value="10">10 Periode</option>
+                <option value="11">11 Periode</option>
+                <option value="12">12 Periode (Satu Tahun)</option>
+            </select>
         </div>
 
         <label>Jenis Pembayaran:</label>
@@ -105,13 +122,14 @@
 
         <label>Nominal (Rp):</label>
         <input type="number" id="form-nominal" placeholder="Isi angka tanpa titik">
+        <small id="hint-nominal" class="hidden hint-text">* Nominal terhitung otomatis. Anda masih bisa mengubahnya manual jika ada pembayaran kolektif.</small>
 
         <label>Foto Bukti / Nota (Wajib/Opsional):</label>
         <input type="file" id="form-foto" accept="image/*" capture="environment" onchange="previewFoto(event)">
         <img id="preview-foto" class="hidden">
 
         <label>Keterangan Tambahan:</label>
-        <input type="text" id="form-keterangan" placeholder="Catatan tambahan...">
+        <input type="text" id="form-keterangan" placeholder="Contoh: Titipan iuran Made, dsb...">
 
         <button class="btn-primary" id="btn-simpan" onclick="simpanDataTransaksi()">💾 Simpan Transaksi</button>
         <button class="btn-danger" onclick="tutupFormTransaksi()">Batal</button>

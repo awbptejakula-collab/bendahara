@@ -2,74 +2,122 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PWA Keuangan Banjar</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 15px; background-color: #f4f7f6; }
-        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .hidden { display: none !important; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: top; }
-        th { background-color: #4CAF50; color: white; }
-        button, select { padding: 12px; margin-top: 10px; width: 100%; font-size: 15px; cursor: pointer; border-radius: 5px; box-sizing: border-box; }
-        .btn-primary { background-color: #4CAF50; color: white; border: none; font-weight: bold; }
-        .btn-secondary { background-color: #2196F3; color: white; border: none; font-weight: bold; }
-        .btn-danger { background-color: #f44336; color: white; border: none; }
-        .btn-menu { padding: 15px; font-size: 16px; margin-bottom: 10px; }
-        input[type="text"], input[type="password"], input[type="number"], input[type="date"], input[type="file"] { 
-            width: 100%; padding: 12px; margin-top: 5px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 15px; 
+        /* TEMA MODERN & VARIABEL WARNA */
+        :root {
+            --primary: #4CAF50;
+            --primary-dark: #388E3C;
+            --secondary: #2196F3;
+            --danger: #f44336;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-main: #333333;
+            --text-muted: #777777;
         }
-        label { font-weight: bold; font-size: 14px; color: #333; display: block; margin-top: 10px; }
-        .error-text { color: red; margin-bottom: 10px; font-size: 14px; font-weight: bold; text-align: center; }
-        .header-flex { display: flex; justify-content: space-between; align-items: center; }
-        #preview-foto { max-width: 100%; border-radius: 5px; margin-top: 10px; }
-        .grup-box { background-color: #eef2f3; padding: 15px; border-radius: 5px; margin-bottom: 10px; border: 1px dashed #bbb;}
+
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: var(--bg-color); color: var(--text-main); padding-top: 60px; padding-bottom: 50px; }
+        
+        /* HEADER & FOOTER STICKY */
+        .app-header { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: var(--primary); color: white; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 1000; }
+        .app-header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+        .header-icons { display: flex; gap: 15px; align-items: center; font-size: 20px; }
+        .icon-btn { cursor: pointer; position: relative; transition: transform 0.2s; }
+        .icon-btn:active { transform: scale(0.9); }
+        .notif-dot { position: absolute; top: -2px; right: -2px; background: red; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--primary); }
+        
+        .app-footer { position: fixed; bottom: 0; left: 0; right: 0; height: 40px; background: white; color: var(--text-muted); display: flex; justify-content: center; align-items: center; font-size: 12px; box-shadow: 0 -2px 5px rgba(0,0,0,0.05); z-index: 1000; }
+
+        /* CONTAINER UTAMA */
+        .container { max-width: 600px; margin: 15px auto; padding: 0 15px; }
+        .card-container { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .hidden { display: none !important; }
+
+        /* MENU GRID (KOTAK-KOTAK MODERN) */
+        .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 15px; }
+        .menu-card { background: white; border: 1px solid #e0e0e0; border-radius: 12px; padding: 20px 10px; text-align: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .menu-card:active { transform: translateY(2px); box-shadow: none; background: #f9f9f9; }
+        .menu-icon { font-size: 35px; }
+        .menu-title { font-size: 14px; font-weight: 600; color: var(--text-main); }
+
+        /* FORM & TABEL */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; background: white; }
+        th, td { border: 1px solid #eee; padding: 10px; text-align: left; vertical-align: top; }
+        th { background-color: var(--primary); color: white; border: none; }
+        tr:nth-child(even) { background-color: #fafafa; }
+        
+        button, select, input { padding: 12px; width: 100%; font-size: 15px; border-radius: 8px; box-sizing: border-box; border: 1px solid #ccc; font-family: inherit; }
+        button { cursor: pointer; border: none; font-weight: bold; transition: opacity 0.2s; margin-top: 10px; }
+        button:active { opacity: 0.8; }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-secondary { background-color: var(--secondary); color: white; }
+        .btn-danger { background-color: var(--danger); color: white; }
+        
+        label { font-weight: bold; font-size: 13px; color: #555; display: block; margin-top: 12px; margin-bottom: 4px; }
+        .error-text { color: var(--danger); margin-bottom: 10px; font-size: 14px; font-weight: bold; text-align: center; }
+        .grup-box { background-color: #f8fcf8; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #c8e6c9;}
         .hint-text { color: #ff9800; font-size: 12px; font-weight: bold; margin-top: -5px; margin-bottom: 10px; display: block; }
-        .badge-sumber { display: inline-block; background: #e0e0e0; color: #333; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-top: 4px; }
+        .badge-sumber { display: inline-block; background: #eee; color: #555; padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; margin-top: 6px; }
+        .screen-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .screen-title h2 { margin: 0; font-size: 18px; color: var(--primary-dark); }
+        
+        #preview-foto { max-width: 100%; border-radius: 8px; margin-top: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
 
+<header id="app-header" class="app-header hidden">
+    <h1>Keuangan PWA</h1>
+    <div class="header-icons">
+        <div class="icon-btn" onclick="sinkronisasiManual()" title="Refresh Data">🔄</div>
+        <div class="icon-btn" onclick="cekNotifikasiAlert()" title="Notifikasi">
+            🔔<div id="notif-dot" class="notif-dot hidden"></div>
+        </div>
+        <div class="icon-btn" onclick="logout()" title="Keluar">🚪</div>
+    </div>
+</header>
+
 <div class="container">
-    <div id="login-screen">
-        <h2>Login Sistem</h2>
+    <div id="login-screen" class="card-container">
+        <h2 style="text-align: center; color: var(--primary); margin-top: 0;">Login Sistem</h2>
         <div id="login-error" class="hidden error-text"></div>
-        <label>Username:</label><input type="text" id="input-username">
-        <label>Password:</label><input type="password" id="input-password">
-        <button class="btn-primary" onclick="prosesLogin()">Masuk</button>
+        <label>Username:</label><input type="text" id="input-username" placeholder="Masukkan username...">
+        <label>Password:</label><input type="password" id="input-password" placeholder="Masukkan password...">
+        <button class="btn-primary" style="margin-top: 20px;" onclick="prosesLogin()">Masuk Aplikasi</button>
     </div>
 
     <div id="main-menu-screen" class="hidden">
-        <h2>Menu Utama <br><small style="color: #666; font-size: 14px;" id="menu-role-text"></small></h2>
-        <button class="btn-primary btn-menu" onclick="navigasi('dashboard-screen')">Buku Kas Tunggal</button>
-        <button class="btn-secondary btn-menu" onclick="navigasi('iuran-screen')">Daftar Iuran Wajib</button>
-        <button class="btn-secondary btn-menu" id="btn-menu-tambah" onclick="bukaFormTransaksi()">➕ Tambah Transaksi</button>
-        <button class="btn-danger btn-menu" onclick="logout()">Keluar</button>
+        <div class="card-container" style="padding-bottom: 10px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: #333;">Halo, <span id="user-role-text" style="color: var(--primary);"></span>!</h2>
+                <p style="margin: 5px 0 0; font-size: 13px; color: var(--text-muted);">Pilih menu di bawah untuk mulai bekerja.</p>
+            </div>
+            <div id="dynamic-menu-grid" class="menu-grid"></div>
+        </div>
     </div>
 
-    <div id="dashboard-screen" class="hidden">
-        <div class="header-flex">
-            <h2>Buku Kas</h2>
-            <button class="btn-danger" style="width: auto; padding: 8px 15px;" onclick="navigasi('main-menu-screen')">Kembali</button>
+    <div id="dashboard-screen" class="card-container hidden">
+        <div class="screen-title">
+            <h2>Buku Kas Tunggal</h2>
+            <button class="btn-secondary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 13px;" onclick="navigasi('main-menu-screen')">Kembali</button>
         </div>
-        <button class="btn-primary" onclick="loadDataServer()">🔄 Refresh Data Server</button>
-        <p id="loading-text-kas" class="hidden" style="text-align: center; color: #666;"><i>Memuat data...</i></p>
+        <p id="loading-text-kas" class="hidden" style="text-align: center; color: var(--text-muted); font-size: 13px;"><i>Memuat data...</i></p>
         <div style="overflow-x:auto;">
             <table>
-                <thead><tr><th>Tanggal</th><th>Keterangan</th><th>Nominal</th></tr></thead>
+                <thead><tr><th>Tanggal</th><th>Rincian Transaksi</th><th>Nominal</th></tr></thead>
                 <tbody id="tabel-kas"></tbody>
             </table>
         </div>
     </div>
 
-    <div id="iuran-screen" class="hidden">
-        <div class="header-flex">
+    <div id="iuran-screen" class="card-container hidden">
+        <div class="screen-title">
             <h2>Daftar Iuran</h2>
-            <button class="btn-danger" style="width: auto; padding: 8px 15px;" onclick="navigasi('main-menu-screen')">Kembali</button>
+            <button class="btn-secondary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 13px;" onclick="navigasi('main-menu-screen')">Kembali</button>
         </div>
-        <p style="font-size: 13px; color: #555;">Daftar pembayaran iuran wajib dari Bendahara 1 & 2 untuk mencegah dobel catat.</p>
-        <button class="btn-primary" onclick="loadDataServer()">🔄 Refresh Data Server</button>
-        <p id="loading-text-iuran" class="hidden" style="text-align: center; color: #666;"><i>Memuat data...</i></p>
+        <p style="font-size: 12px; color: var(--text-muted); margin-top: 0;">Rekap pembayaran iuran wajib dari seluruh bendahara.</p>
+        <p id="loading-text-iuran" class="hidden" style="text-align: center; color: var(--text-muted); font-size: 13px;"><i>Memuat data...</i></p>
         <div style="overflow-x:auto;">
             <table>
                 <thead><tr><th>Tanggal</th><th>Anggota/Pihak</th><th>Nominal</th></tr></thead>
@@ -78,8 +126,8 @@
         </div>
     </div>
 
-    <div id="form-screen" class="hidden">
-        <h2>Input Transaksi Baru</h2>
+    <div id="form-screen" class="card-container hidden">
+        <h2 style="margin-top: 0; color: var(--primary-dark); border-bottom: 2px solid #eee; padding-bottom: 10px;">Input Transaksi Baru</h2>
         
         <label>Tanggal Transaksi:</label>
         <input type="date" id="form-tanggal">
@@ -97,9 +145,9 @@
         <input type="text" id="form-nama-pihak" placeholder="Contoh: Bpk. Wayan">
 
         <div id="grup-iuran" class="hidden grup-box">
-            <h4 style="margin-top:0; color:#2196F3;">Detail Iuran Wajib</h4>
+            <h4 style="margin-top:0; color:var(--primary); font-size: 15px;">Detail Iuran Wajib</h4>
             
-            <label>Kelompok / Tempek:</label>
+            <label style="margin-top: 0;">Kelompok / Tempek:</label>
             <select id="form-kelompok">
                 <option value="">-- Pilih Kelompok --</option>
                 <option value="Tempek Kangin">Tempek Kangin</option>
@@ -152,9 +200,13 @@
         <input type="text" id="form-keterangan" placeholder="Contoh: Titipan iuran Made...">
 
         <button class="btn-primary" id="btn-simpan" onclick="simpanDataTransaksi()">💾 Simpan Transaksi</button>
-        <button class="btn-danger" onclick="navigasi('main-menu-screen')">Batal</button>
+        <button class="btn-danger" style="background: #e0e0e0; color: #333;" onclick="navigasi('main-menu-screen')">Batal</button>
     </div>
 </div>
+
+<footer id="app-footer" class="app-footer hidden">
+    Sistem Keuangan PWA © 2026
+</footer>
 
 <script src="app.js"></script>
 </body>

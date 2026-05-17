@@ -36,6 +36,7 @@
         label { font-weight: bold; font-size: 13px; color: #555; display: block; margin-top: 12px; margin-bottom: 4px; }
         .error-text { color: var(--danger); margin-bottom: 10px; font-size: 14px; font-weight: bold; text-align: center; }
         .grup-box { background-color: #f8fcf8; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #c8e6c9;}
+        .inner-box { background-color: white; padding: 12px; border-radius: 8px; border: 1px solid #ddd; margin-top: 10px; }
         .hint-text { color: #ff9800; font-size: 12px; font-weight: bold; margin-top: -5px; margin-bottom: 10px; display: block; }
         .badge-sumber { display: inline-block; background: #eee; color: #555; padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; margin-top: 6px; }
         .screen-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
@@ -84,12 +85,8 @@
             </div>
             <button class="btn-secondary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 13px; height:fit-content;" onclick="navigasi('main-menu-screen')">Kembali</button>
         </div>
-        
         <label>Kelompok - Keluarga:</label>
-        <select id="filter-kelompok-keluarga" onchange="renderTabelAnggota()">
-            <option value="Semua">Tampilkan Semua</option>
-            </select>
-
+        <select id="filter-kelompok-keluarga" onchange="renderTabelAnggota()"><option value="Semua">Tampilkan Semua</option></select>
         <p style="font-size: 11px; color: #888; margin-bottom: 5px;">*Klik Nama Krama untuk melihat riwayat dan bayar iuran.</p>
         <div style="overflow-x:auto;">
             <table>
@@ -97,7 +94,6 @@
                 <tbody id="tabel-anggota"></tbody>
             </table>
         </div>
-
         <div style="margin-top: 25px; border-top: 1px solid #eee; padding-top: 15px; display: flex; gap: 10px;">
             <button class="btn-primary" style="margin-top: 0;" onclick="bukaModal('modal-update')">Update Krama</button>
             <button class="btn-outline" style="margin-top: 0;" onclick="bukaModal('modal-edit')">Edit Krama</button>
@@ -153,29 +149,53 @@
         <div id="grup-iuran" class="hidden grup-box">
             <h4 style="margin-top:0; color:var(--primary); font-size: 15px;">Detail Iuran Wajib</h4>
             
-            <label style="margin-top: 0;">Kelompok - Keluarga:</label>
-            <select id="form-kelompok-keluarga" onchange="filterAnggotaForm()">
-                <option value="">-- Pilih Kelompok & Keluarga --</option>
+            <label>Kategori Pembayaran Iuran:</label>
+            <select id="form-kategori-iuran" onchange="gantiKategoriIuran()">
+                <option value="Personal">Personal (1 Anggota)</option>
+                <option value="Kolektif">Kolektif (Banyak Anggota)</option>
             </select>
 
-            <label>Pilih Krama / Anggota:</label>
-            <select id="form-anggota" onchange="autofillAnggota()">
-                <option value="">-- Pilih Krama --</option>
-            </select>
+            <div class="inner-box">
+                <label style="margin-top: 0;">Kelompok - Keluarga:</label>
+                <select id="form-kelompok-keluarga" onchange="filterAnggotaForm()"></select>
 
-            <label>Jenis KK:</label>
-            <input type="text" id="form-jenis-kk" readonly style="background-color: #eee;">
+                <label>Pilih Krama / Anggota:</label>
+                <select id="form-anggota" onchange="autofillAnggota()">
+                    <option value="">-- Pilih Krama --</option>
+                </select>
 
-            <label>Jumlah Periode (Pembayaran):</label>
-            <select id="form-jumlah-periode" onchange="kalkulasiNominalKK()">
-                <option value="1">1 Periode (Saat Ini)</option>
-                <option value="2">2 Periode (Rapel)</option>
-                <option value="3">3 Periode (Rapel)</option>
-                <option value="4">4 Periode</option>
-                <option value="5">5 Periode</option>
-                <option value="6">6 Periode (Setengah Tahun)</option>
-                <option value="12">12 Periode (Satu Tahun)</option>
-            </select>
+                <label>Jenis KK:</label>
+                <input type="text" id="form-jenis-kk" readonly style="background-color: #eee;">
+
+                <label>Jumlah Periode (Pembayaran):</label>
+                <select id="form-jumlah-periode" onchange="kalkulasiNominalKK()">
+                    <option value="1">1 Periode (Saat Ini)</option>
+                    <option value="2">2 Periode (Rapel)</option>
+                    <option value="3">3 Periode (Rapel)</option>
+                    <option value="4">4 Periode</option>
+                    <option value="5">5 Periode</option>
+                    <option value="6">6 Periode (Setengah Tahun)</option>
+                    <option value="12">12 Periode (Satu Tahun)</option>
+                </select>
+
+                <label>Nominal (Rp):</label>
+                <input type="number" id="form-nominal" placeholder="Isi angka tanpa titik">
+                <small id="hint-nominal" class="hidden hint-text">* Bisa diedit manual.</small>
+
+                <button type="button" id="btn-tambah-kolektif" class="btn-secondary hidden" onclick="tambahKeKolektif()">➕ Tambah ke Daftar Kolektif</button>
+            </div>
+
+            <div id="box-daftar-kolektif" class="hidden" style="margin-top: 15px;">
+                <h4 style="margin:0 0 10px 0; color:var(--primary-dark);">Daftar Pembayaran Kolektif:</h4>
+                <table style="font-size:12px; margin-top:0;">
+                    <thead><tr><th>Nama Krama</th><th>Prd</th><th>Nominal</th><th>Hapus</th></tr></thead>
+                    <tbody id="list-kolektif"></tbody>
+                </table>
+            </div>
+
+        </div> <div id="box-total-bayar" class="hidden" style="margin-top: 15px; padding: 12px; background: #e8f5e9; border-radius: 8px; border: 1px solid var(--primary); display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-weight: bold; font-size: 14px;">Total Pembayaran Kolektif:</span>
+            <span id="label-total-kolektif" style="font-weight: bold; font-size: 18px; color: var(--primary-dark);">Rp 0</span>
         </div>
 
         <label>Jenis Pembayaran:</label>
@@ -183,10 +203,6 @@
             <option value="Tunai">Tunai / Cash</option>
             <option value="Transfer">Transfer Bank</option>
         </select>
-
-        <label>Nominal (Rp):</label>
-        <input type="number" id="form-nominal" placeholder="Isi angka tanpa titik">
-        <small id="hint-nominal" class="hidden hint-text">* Bisa diedit manual jika pembayaran kolektif.</small>
 
         <label>Foto Bukti / Nota (Wajib/Opsional):</label>
         <input type="file" id="form-foto" accept="image/*" capture="environment" onchange="previewFoto(event)">
@@ -203,7 +219,7 @@
 <div id="modal-update" class="modal-overlay hidden">
     <div class="modal-card">
         <h3 style="margin-top:0; color:var(--primary);">Update Data Krama</h3>
-        <p style="font-size:14px; color:#555;">Untuk menambah anggota baru, silakan input data langsung di file Google Spreadsheet pada sheet <b>ref_anggota</b>. Sistem akan otomatis membuatkan ID Anggota.</p>
+        <p style="font-size:14px; color:#555;">Untuk menambah anggota baru, input data di file Google Spreadsheet pada sheet <b>ref_anggota</b>. Sistem akan membuatkan ID Anggota.</p>
         <button class="btn-danger" onclick="tutupModal('modal-update')">Tutup</button>
     </div>
 </div>
@@ -211,7 +227,7 @@
 <div id="modal-edit" class="modal-overlay hidden">
     <div class="modal-card">
         <h3 style="margin-top:0; color:var(--secondary);">Edit Data Krama</h3>
-        <p style="font-size:14px; color:#555;">Fitur edit data langsung dari aplikasi sedang dalam pengembangan. Mohon edit data sementara melalui Google Spreadsheet.</p>
+        <p style="font-size:14px; color:#555;">Fitur edit data langsung dari aplikasi sedang dalam pengembangan. Mohon edit sementara melalui Google Spreadsheet.</p>
         <button class="btn-danger" onclick="tutupModal('modal-edit')">Tutup</button>
     </div>
 </div>

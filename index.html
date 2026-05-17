@@ -3,26 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PWA Keuangan Organisasi</title>
+    <title>PWA Keuangan Banjar</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f7f6; }
+        body { font-family: Arial, sans-serif; margin: 15px; background-color: #f4f7f6; }
         .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .hidden { display: none; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+        .hidden { display: none !important; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #4CAF50; color: white; }
-        button, select { padding: 10px; margin-top: 10px; width: 100%; font-size: 16px; cursor: pointer; border-radius: 4px; box-sizing: border-box; }
+        button, select { padding: 12px; margin-top: 10px; width: 100%; font-size: 15px; cursor: pointer; border-radius: 5px; box-sizing: border-box; }
         .btn-primary { background-color: #4CAF50; color: white; border: none; font-weight: bold; }
         .btn-secondary { background-color: #2196F3; color: white; border: none; font-weight: bold; }
         .btn-danger { background-color: #f44336; color: white; border: none; }
-        
-        input[type="text"], input[type="password"], input[type="number"], input[type="date"] { 
-            width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 10px; 
-            border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; 
+        input[type="text"], input[type="password"], input[type="number"], input[type="date"], input[type="file"] { 
+            width: 100%; padding: 12px; margin-top: 5px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 15px; 
         }
-        label { font-weight: bold; font-size: 14px; color: #333; }
+        label { font-weight: bold; font-size: 14px; color: #333; display: block; margin-top: 10px; }
         .error-text { color: red; margin-bottom: 10px; font-size: 14px; font-weight: bold; text-align: center; }
         .header-flex { display: flex; justify-content: space-between; align-items: center; }
+        .bg-readonly { background-color: #e9ecef; }
+        #preview-foto { max-width: 100%; border-radius: 5px; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -30,38 +30,23 @@
 <div class="container">
     <div id="login-screen">
         <h2>Login Sistem</h2>
-        <div id="login-error" class="hidden error-text">Username atau password salah!</div>
-        
-        <label>Username:</label>
-        <input type="text" id="input-username" placeholder="Masukkan username">
-        
-        <label>Password:</label>
-        <input type="password" id="input-password" placeholder="Masukkan password">
-        
+        <div id="login-error" class="hidden error-text"></div>
+        <label>Username:</label><input type="text" id="input-username">
+        <label>Password:</label><input type="password" id="input-password">
         <button class="btn-primary" onclick="prosesLogin()">Masuk</button>
     </div>
 
     <div id="dashboard-screen" class="hidden">
         <div class="header-flex">
             <h2 id="welcome-text">Buku Kas</h2>
-            <button class="btn-danger" style="width: auto; padding: 5px 15px;" onclick="logout()">Keluar</button>
+            <button class="btn-danger" style="width: auto; padding: 8px 15px;" onclick="logout()">Keluar</button>
         </div>
-        
         <button class="btn-secondary" id="btn-tambah" onclick="bukaFormTransaksi()">➕ Tambah Transaksi</button>
         <button class="btn-primary" onclick="loadBukuKas()">🔄 Refresh Tabel Kas</button>
-
         <p id="loading-text" class="hidden" style="text-align: center;"><i>Memuat data...</i></p>
-        
         <div style="overflow-x:auto;">
             <table>
-                <thead>
-                    <tr>
-                        <th>Tanggal</th>
-                        <th>Kategori</th>
-                        <th>Mas/Kel</th>
-                        <th>Nominal</th>
-                    </tr>
-                </thead>
+                <thead><tr><th>Tanggal</th><th>Keterangan</th><th>Mas/Kel</th><th>Nominal</th></tr></thead>
                 <tbody id="tabel-kas"></tbody>
             </table>
         </div>
@@ -74,33 +59,60 @@
         <input type="date" id="form-tanggal">
 
         <label>Jenis Arus Kas:</label>
-        <select id="form-jenis" onchange="updateDropdownKategori()">
+        <select id="form-jenis" onchange="updateFormDinamis()">
             <option value="Pendapatan">Pendapatan</option>
             <option value="Pengeluaran">Pengeluaran</option>
         </select>
 
         <label>Kategori Transaksi:</label>
-        <select id="form-kategori" onchange="cekTampilAnggota()"></select>
+        <select id="form-kategori" onchange="updateFormDinamis()"></select>
 
-        <div id="grup-anggota" class="hidden">
-            <label>Pilih Anggota (Yang Membayar):</label>
+        <label id="label-nama-pihak">Nama Pembayar:</label>
+        <input type="text" id="form-nama-pihak" placeholder="Contoh: Bpk. Wayan / Toko Bangunan">
+
+        <div id="grup-iuran" class="hidden">
+            <label>Pilih Anggota (Opsional):</label>
             <select id="form-anggota"></select>
+            
+            <label>Kelompok / Tempek:</label>
+            <select id="form-kelompok">
+                <option value="">-- Pilih Kelompok --</option>
+                <option value="Tempek Kangin">Tempek Kangin</option>
+                <option value="Tempek Kauh">Tempek Kauh</option>
+                <option value="Tempek Kelod">Tempek Kelod</option>
+                <option value="Tempek Kaja">Tempek Kaja</option>
+            </select>
+
+            <label>Jenis KK:</label>
+            <select id="form-jenis-kk" onchange="kalkulasiNominalKK()">
+                <option value="">-- Pilih Jenis KK --</option>
+                <option value="KK 01">KK 01 (Rp 50.000)</option>
+                <option value="KK 02">KK 02 (Rp 100.000)</option>
+                <option value="Duda 01">Duda 01 (Rp 50.000)</option>
+                <option value="Duda 02">Duda 02 (Rp 100.000)</option>
+                <option value="Janda">Janda (Rp 25.000)</option>
+                <option value="Bujang">Bujang (Rp 25.000)</option>
+            </select>
         </div>
 
         <label>Jenis Pembayaran:</label>
         <select id="form-pembayaran">
-            <option value="Tunai">Tunai (Cash / Kotak Amal)</option>
+            <option value="Tunai">Tunai / Cash</option>
             <option value="Transfer">Transfer Bank</option>
         </select>
 
         <label>Nominal (Rp):</label>
-        <input type="number" id="form-nominal" placeholder="Contoh: 50000 (Tanpa titik)">
+        <input type="number" id="form-nominal" placeholder="Isi angka tanpa titik">
 
-        <label>Keterangan (Opsional):</label>
-        <input type="text" id="form-keterangan" placeholder="Contoh: Iuran bulan Mei">
+        <label>Foto Bukti / Nota (Wajib/Opsional):</label>
+        <input type="file" id="form-foto" accept="image/*" capture="environment" onchange="previewFoto(event)">
+        <img id="preview-foto" class="hidden">
+
+        <label>Keterangan Tambahan:</label>
+        <input type="text" id="form-keterangan" placeholder="Catatan tambahan...">
 
         <button class="btn-primary" id="btn-simpan" onclick="simpanDataTransaksi()">💾 Simpan Transaksi</button>
-        <button onclick="tutupFormTransaksi()">Batal</button>
+        <button class="btn-danger" onclick="tutupFormTransaksi()">Batal</button>
     </div>
 </div>
 

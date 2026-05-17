@@ -11,8 +11,21 @@
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #4CAF50; color: white; }
-        button, select { padding: 10px; margin-top: 10px; width: 100%; font-size: 16px; }
-        .btn-primary { background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+        button { padding: 10px; margin-top: 10px; width: 100%; font-size: 16px; cursor: pointer; border-radius: 4px; }
+        .btn-primary { background-color: #4CAF50; color: white; border: none; }
+        
+        /* Tambahan CSS untuk Form Input */
+        input[type="text"], input[type="password"] { 
+            width: 100%; 
+            padding: 10px; 
+            margin-top: 5px; 
+            margin-bottom: 15px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            box-sizing: border-box; /* Agar form tidak melebar keluar kotak */
+            font-size: 16px; 
+        }
+        .error-text { color: red; margin-bottom: 10px; font-size: 14px; font-weight: bold; text-align: center; }
     </style>
 </head>
 <body>
@@ -20,13 +33,15 @@
 <div class="container">
     <div id="login-screen">
         <h2>Login Sistem</h2>
-        <label>Pilih Peran:</label>
-        <select id="role-select">
-            <option value="Admin">Admin</option>
-            <option value="Bendahara 1">Bendahara 1</option>
-            <option value="Bendahara 2">Bendahara 2</option>
-        </select>
-        <button class="btn-primary" onclick="login()">Masuk</button>
+        <div id="login-error" class="hidden error-text">Username atau password salah!</div>
+        
+        <label>Username:</label>
+        <input type="text" id="input-username" placeholder="Masukkan username">
+        
+        <label>Password:</label>
+        <input type="password" id="input-password" placeholder="Masukkan password">
+        
+        <button class="btn-primary" onclick="prosesLogin()">Masuk</button>
     </div>
 
     <div id="dashboard-screen" class="hidden">

@@ -1,16 +1,42 @@
 // --- KONFIGURASI ---
+// PENTING: Paste URL Apps Script Anda di bawah ini!
 const GAS_URL = "https://script.google.com/macros/s/AKfycbyYVyWUnwtZaY1IeI4EigdtxcvjBYmqHIQlKhZzs0UcIrU5nSU-ikafbvpyUgsY3roh/exec"; 
 let currentUserRole = "";
 
-// --- FUNGSI NAVIGASI ---
-function login() {
-    currentUserRole = document.getElementById('role-select').value;
-    document.getElementById('login-screen').classList.add('hidden');
-    document.getElementById('dashboard-screen').classList.remove('hidden');
-    document.getElementById('welcome-text').innerText = "Buku Kas - Akses: " + currentUserRole;
-    
-    // Langsung tarik data saat berhasil login
-    loadBukuKas();
+// Database user sederhana untuk uji coba
+const dataUser = {
+    "admin": { password: "123", role: "Admin" },
+    "benda1": { password: "123", role: "Bendahara 1" },
+    "benda2": { password: "123", role: "Bendahara 2" }
+};
+
+// --- FUNGSI NAVIGASI & LOGIN ---
+function prosesLogin() {
+    const user = document.getElementById('input-username').value.trim();
+    const pass = document.getElementById('input-password').value.trim();
+    const errorMsg = document.getElementById('login-error');
+
+    // Cek apakah username ada di database dan passwordnya cocok
+    if (dataUser[user] && dataUser[user].password === pass) {
+        // Jika Berhasil
+        currentUserRole = dataUser[user].role;
+        
+        // Bersihkan kolom input
+        document.getElementById('input-username').value = "";
+        document.getElementById('input-password').value = "";
+        errorMsg.classList.add('hidden'); // Sembunyikan pesan error
+
+        // Pindah halaman
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('dashboard-screen').classList.remove('hidden');
+        document.getElementById('welcome-text').innerText = "Buku Kas - Akses: " + currentUserRole;
+        
+        // Tarik data
+        loadBukuKas();
+    } else {
+        // Jika Gagal
+        errorMsg.classList.remove('hidden'); // Munculkan pesan error
+    }
 }
 
 function logout() {
@@ -29,7 +55,6 @@ async function loadBukuKas() {
     tabelKas.innerHTML = "";
 
     try {
-        // Memanggil fungsi doGet di Apps Script
         const response = await fetch(GAS_URL + "?action=getBukuKas");
         const result = await response.json();
 
@@ -56,10 +81,7 @@ function tampilkanDataKeTabel(data) {
     }
 
     data.forEach(transaksi => {
-        // Format tanggal (mengambil bagian tanggalnya saja)
         let tgl = new Date(transaksi.tanggal).toLocaleDateString('id-ID');
-        
-        // Format Rupiah
         let nominalRp = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(transaksi.nominal);
 
         let tr = document.createElement('tr');

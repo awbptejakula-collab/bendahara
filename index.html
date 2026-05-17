@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Keuangan Organisasi</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f7f6; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .hidden { display: none; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #4CAF50; color: white; }
+        button, select { padding: 10px; margin-top: 10px; width: 100%; font-size: 16px; }
+        .btn-primary { background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="login-screen">
+        <h2>Login Sistem</h2>
+        <label>Pilih Peran:</label>
+        <select id="role-select">
+            <option value="Admin">Admin</option>
+            <option value="Bendahara 1">Bendahara 1</option>
+            <option value="Bendahara 2">Bendahara 2</option>
+        </select>
+        <button class="btn-primary" onclick="login()">Masuk</button>
+    </div>
+
+    <div id="dashboard-screen" class="hidden">
+        <h2 id="welcome-text">Buku Kas Tunggal</h2>
+        <button class="btn-primary" onclick="loadBukuKas()">🔄 Refresh Data Kas</button>
+        <button onclick="logout()">Keluar</button>
+
+        <p id="loading-text" class="hidden"><i>Mengambil data dari server...</i></p>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Kategori</th>
+                    <th>Masuk/Keluar</th>
+                    <th>Nominal</th>
+                </tr>
+            </thead>
+            <tbody id="tabel-kas">
+                </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

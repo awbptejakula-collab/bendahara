@@ -7,13 +7,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbyYVyWUnwtZaY1IeI4Eigdt
 let currentUserRole = "";
 let dataKategori = [];
 let dataAnggota = [];
-let base64FotoTemp = ""; // Menyimpan foto sementara
-
-const tarifKK = {
-    "KK 01": 50000, "KK 02": 100000, 
-    "Duda 01": 50000, "Duda 02": 100000, 
-    "Janda": 25000, "Bujang": 25000
-};
+let base64FotoTemp = ""; 
 
 // ==========================================
 // FUNGSI LOGIN & DASHBOARD
@@ -103,12 +97,18 @@ async function tarikDataReferensi() {
 
         let resAng = await fetch(GAS_URL + "?action=getAnggotaDropdown");
         let jsonAng = await resAng.json();
-        if(jsonAng.status === 'ok') dataAnggota = jsonAng.data;
+        if(jsonAng.status === 'ok') {
+            dataAnggota = jsonAng.data;
+            // Isi dropdown anggota
+            let selAng = document.getElementById('form-anggota');
+            selAng.innerHTML = '<option value="">-- Pilih Anggota --</option>';
+            dataAnggota.forEach(a => { selAng.innerHTML += `<option value="${a.id_anggota}">${a.nama_anggota}</option>`; });
+        }
     } catch (error) {}
 }
 
 // ==========================================
-// FUNGSI FORM TRANSAKSI DINAMIS
+// FUNGSI FORM TRANSAKSI DINAMIS & LOGIKA IURAN
 // ==========================================
 function bukaFormTransaksi() {
     document.getElementById('dashboard-screen').classList.add('hidden');
@@ -119,12 +119,13 @@ function bukaFormTransaksi() {
     document.getElementById('form-keterangan').value = "";
     document.getElementById('form-nama-pihak').value = "";
     
-    // Reset foto
     document.getElementById('form-foto').value = "";
     document.getElementById('preview-foto').classList.add('hidden');
     base64FotoTemp = "";
 
-    updateFormDinamis(true); // true = reset kategori
+    // Reset dropdown jenis ke Pendapatan dan jalankan filter
+    document.getElementById('form-jenis').value = "Pendapatan";
+    gantiJenis();
 }
 
 function tutupFormTransaksi() {
@@ -132,44 +133,56 @@ function tutupFormTransaksi() {
     document.getElementById('dashboard-screen').classList.remove('hidden');
 }
 
-function updateFormDinamis(isInit = false) {
+function gantiJenis() {
     const jenis = document.getElementById('form-jenis').value;
     const labelPihak = document.getElementById('label-nama-pihak');
+    const inputPihak = document.getElementById('form-nama-pihak');
     const dropdownKat = document.getElementById('form-kategori');
-    
-    // 1. Ubah Label
-    labelPihak.innerText = jenis === "Pendapatan" ? "Nama Pembayar / Pemberi:" : "Nama Penerima Dana:";
 
-    // 2. Filter Kategori
-    if (isInit || !dropdownKat.innerHTML) {
-        dropdownKat.innerHTML = "";
-        dataKategori.filter(k => k.jenis === jenis).forEach(k => {
-            let opt = document.createElement('option');
-            opt.value = k.nama; opt.innerText = k.nama;
-            dropdownKat.appendChild(opt);
-        });
+    // 1. Ubah Label (Nama Pembayar vs Nama Penerima)
+    if (jenis === "Pendapatan") {
+        labelPihak.innerText = "Nama Pembayar / Penyetor:";
+        inputPihak.placeholder = "Contoh: Bpk. Wayan";
+    } else {
+        labelPihak.innerText = "Nama Penerima Dana:";
+        inputPihak.placeholder = "Contoh: Toko Bangunan / Tukang";
     }
 
-    // 3. Cek Tampil Grup Iuran
-    const katDipilih = dropdownKat.value;
+    // 2. Filter Dropdown Kategori dengan fitur "Fallback" (jika koneksi lambat)
+    dropdownKat.innerHTML = "";
+    let filterKat = dataKategori.filter(k => k.jenis === jenis);
+    
+    if (filterKat.length === 0) {
+        // Fallback Data Standar
+        if (jenis === "Pendapatan") filterKat = [{nama: "Iuran Wajib"}, {nama: "Sukarela/Punia"}];
+        else filterKat = [{nama: "Operasional Ngaben"}, {nama: "Santunan Ngaben"}, {nama: "Pemeliharaan Alat"}];
+    }
+
+    filterKat.forEach(k => {
+        let opt = document.createElement('option');
+        opt.value = k.nama; opt.innerText = k.nama;
+        dropdownKat.appendChild(opt);
+    });
+
+    // 3. Panggil gantiKategori untuk mengecek apakah Iuran Wajib terpilih
+    gantiKategori();
+}
+
+function gantiKategori() {
+    const kategori = document.getElementById('form-kategori').value;
     const grupIuran = document.getElementById('grup-iuran');
     const formNominal = document.getElementById('form-nominal');
+    const formJenisKK = document.getElementById('form-jenis-kk');
 
-    if (katDipilih === "Iuran Wajib") {
+    if (kategori === "Iuran Wajib") {
         grupIuran.classList.remove('hidden');
-        // Isi dropdown anggota jika belum
-        if(document.getElementById('form-anggota').options.length === 0){
-            let selAng = document.getElementById('form-anggota');
-            selAng.innerHTML = '<option value="">-- Pilih Anggota --</option>';
-            dataAnggota.forEach(a => { selAng.innerHTML += `<option value="${a.id_anggota}">${a.nama_anggota}</option>`; });
-        }
-        kalkulasiNominalKK(); // Lock harga
+        kalkulasiNominalKK(); // Kunci otomatis jika sudah ada pilihan
     } else {
         grupIuran.classList.add('hidden');
-        document.getElementById('form-jenis-kk').value = "";
+        formJenisKK.value = "";
+        formNominal.value = "";
         formNominal.readOnly = false;
-        formNominal.classList.remove('bg-readonly');
-        if (isInit) formNominal.value = "";
+        formNominal.style.backgroundColor = "#ffffff";
     }
 }
 
@@ -177,19 +190,25 @@ function kalkulasiNominalKK() {
     const jenisKK = document.getElementById('form-jenis-kk').value;
     const formNominal = document.getElementById('form-nominal');
     
+    const tarifKK = {
+        "KK 01": 50000, "KK 02": 100000, 
+        "Duda 01": 50000, "Duda 02": 100000, 
+        "Janda": 25000, "Bujang": 25000
+    };
+
     if (tarifKK[jenisKK]) {
         formNominal.value = tarifKK[jenisKK];
         formNominal.readOnly = true;
-        formNominal.classList.add('bg-readonly');
+        formNominal.style.backgroundColor = "#eef2f3"; // Warna abu-abu (terkunci)
     } else {
         formNominal.value = "";
         formNominal.readOnly = false;
-        formNominal.classList.remove('bg-readonly');
+        formNominal.style.backgroundColor = "#ffffff";
     }
 }
 
 // ==========================================
-// FUNGSI KOMPRESI FOTO (PENTING AGAR TIDAK LEMOT)
+// FUNGSI KOMPRESI FOTO
 // ==========================================
 function previewFoto(event) {
     const file = event.target.files[0];
@@ -199,7 +218,6 @@ function previewFoto(event) {
     reader.onload = function(e) {
         const img = new Image();
         img.onload = function() {
-            // Kompres ukuran foto (Maks 800px)
             const canvas = document.createElement('canvas');
             let width = img.width, height = img.height;
             const MAX_SIZE = 800;
@@ -210,7 +228,7 @@ function previewFoto(event) {
             canvas.width = width; canvas.height = height;
             canvas.getContext('2d').drawImage(img, 0, 0, width, height);
             
-            base64FotoTemp = canvas.toDataURL('image/jpeg', 0.6); // 60% kualitas
+            base64FotoTemp = canvas.toDataURL('image/jpeg', 0.6); 
             
             const preview = document.getElementById('preview-foto');
             preview.src = base64FotoTemp;
@@ -241,14 +259,14 @@ async function simpanDataTransaksi() {
     };
 
     if (!payload.tanggal || !payload.nominal || !payload.nama_pihak) {
-        alert("Tanggal, Nama Pihak, dan Nominal wajib diisi!"); return;
+        alert("Tanggal, Nama Pembayar/Penerima, dan Nominal wajib diisi!"); return;
     }
     if (payload.kategori === "Iuran Wajib" && !payload.jenis_kk) {
         alert("Pilih Jenis KK untuk Iuran Wajib!"); return;
     }
 
     const btnSimpan = document.getElementById('btn-simpan');
-    btnSimpan.innerText = "⏳ Sedang Mengupload..."; btnSimpan.disabled = true;
+    btnSimpan.innerText = "⏳ Sedang Mengirim Data..."; btnSimpan.disabled = true;
 
     try {
         const res = await fetch(GAS_URL, {

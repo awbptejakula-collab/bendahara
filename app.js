@@ -10,7 +10,17 @@ let globalDataTransaksi = [];
 let totalDataTerakhir = 0; 
 let base64FotoTemp = ""; 
 let intervalNotif; 
-let listKelKeluarga = []; // Untuk dropdown gabungan
+
+// KELOMPOK DIPATENKAN SESUAI REQUEST
+const DAFTAR_KELOMPOK = [
+    "01 - GEDE SURATHA",
+    "02 - MADE CAHYADI",
+    "03 - JRO BAU",
+    "04 - GEDE AGUS SUASTAWA",
+    "05 - GEDE NATIH",
+    "06 - JRO PANDITA",
+    "07 - GEDE KERTIA"
+];
 
 const appMenus = [
     { id: 'menu-kas', title: 'Buku Kas', icon: '📓', target: 'dashboard-screen', type: 'navigasi', active: true, roles: ['Admin', 'Bendahara 1', 'Bendahara 2'] },
@@ -95,7 +105,6 @@ function navigasi(idTujuan) {
     if(idTujuan === 'anggota-screen') renderTabelAnggota(); 
 }
 
-// Modals
 function bukaModal(id) { document.getElementById(id).classList.remove('hidden'); }
 function tutupModal(id) { document.getElementById(id).classList.add('hidden'); }
 
@@ -194,23 +203,32 @@ function renderTabelIuran() {
     });
 }
 
-// Fitur Baru: Cek Histori Iuran saat Nama di Klik
-function cekHistoriIuran(idAnggota, nama) {
+// SMART REDIRECT: Tanya & Lempar ke Form Pembayaran
+function tanyaBayarIuran(idAnggota, nama, kelKeluarga) {
     let totalBayar = 0;
-    let riwayat = [];
     globalDataTransaksi.forEach(tr => {
         if(tr.kategori === "Iuran Wajib" && tr.id_anggota === idAnggota) {
             totalBayar += parseFloat(tr.nominal);
-            let tgl = new Date(tr.tanggal).toLocaleDateString('id-ID', {day: 'numeric', month:'short'});
-            riwayat.push(`- ${tgl}: Rp ${new Intl.NumberFormat('id-ID').format(tr.nominal)}`);
         }
     });
     
-    let msg = `Krama: ${nama}\nTotal Pembayaran Iuran: Rp ${new Intl.NumberFormat('id-ID').format(totalBayar)}\n\n`;
-    if(riwayat.length > 0) msg += "Riwayat Terakhir:\n" + riwayat.slice(0, 5).join("\n");
-    else msg += "Belum ada catatan iuran di sistem PWA.";
+    let msg = `Krama: ${nama}\nTotal Pembayaran Iuran saat ini: Rp ${new Intl.NumberFormat('id-ID').format(totalBayar)}\n\nLanjutkan ke Pembayaran Iuran Wajib?`;
     
-    alert(msg);
+    if (confirm(msg)) {
+        bukaFormTransaksi();
+        document.getElementById('form-jenis').value = "Pendapatan";
+        gantiJenis(); 
+        document.getElementById('form-kategori').value = "Iuran Wajib";
+        gantiKategori(); 
+        
+        // Pilih dropdown grup
+        document.getElementById('form-kelompok-keluarga').value = kelKeluarga;
+        filterAnggotaForm();
+        
+        // Pilih member spesifik
+        document.getElementById('form-anggota').value = idAnggota;
+        autofillAnggota();
+    }
 }
 
 function renderTabelAnggota() {
@@ -229,10 +247,10 @@ function renderTabelAnggota() {
 
     filteredData.forEach(a => {
         let nom = new Intl.NumberFormat('id-ID').format(a.iuran || 0);
+        let kelKel = `${a.kelompok} - ${a.keluarga}`;
         let row = document.createElement('tr');
-        // Saat nama diklik, jalankan fungsi notifikasi riwayat
         row.innerHTML = `
-            <td><span class="krama-link" onclick="cekHistoriIuran('${a.id_anggota}', '${a.nama_anggota}')">${a.nama_anggota}</span></td>
+            <td><span class="krama-link" onclick="tanyaBayarIuran('${a.id_anggota}', '${a.nama_anggota}', '${kelKel}')">${a.nama_anggota}</span></td>
             <td>${a.keberadaan}</td>
             <td>${a.status_kk}</td>
             <td style="text-align:right;">${nom}</td>
@@ -253,31 +271,25 @@ async function tarikDataReferensi() {
         if(jsonAng.status === 'ok') {
             dataAnggota = jsonAng.data;
             
-            // Buat List Kelompok - Keluarga unik
-            listKelKeluarga = [...new Set(dataAnggota.map(a => `${a.kelompok} - ${a.keluarga}`))].filter(v => v !== " - ");
-            listKelKeluarga.sort();
-            
-            // Isi Dropdown Filter Daftar Anggota
             let selFilter = document.getElementById('filter-kelompok-keluarga');
             selFilter.innerHTML = '<option value="Semua">Tampilkan Semua</option>';
-            listKelKeluarga.forEach(item => {
-                selFilter.innerHTML += `<option value="${item}">${item}</option>`;
-            });
-
-            // Isi Dropdown Form Transaksi
+            
             let selForm = document.getElementById('form-kelompok-keluarga');
             selForm.innerHTML = '<option value="">-- Pilih Kelompok & Keluarga --</option>';
-            listKelKeluarga.forEach(item => {
+            
+            // Isi Menggunakan DAFTAR_KELOMPOK yang dipatenkan
+            DAFTAR_KELOMPOK.forEach(item => {
+                selFilter.innerHTML += `<option value="${item}">${item}</option>`;
                 selForm.innerHTML += `<option value="${item}">${item}</option>`;
             });
-            
+
             renderTabelAnggota();
         }
     } catch (error) {}
 }
 
 // ==========================================
-// 5. FORM TRANSAKSI (IURAN WAJIB DINAMIS)
+// 5. FORM TRANSAKSI DINAMIS 
 // ==========================================
 function bukaFormTransaksi() {
     navigasi('form-screen');
@@ -336,7 +348,6 @@ function gantiKategori() {
     }
 }
 
-// Filter Nama Anggota berdasarkan Dropdown "Kelompok - Keluarga"
 function filterAnggotaForm() {
     const kelKeluarga = document.getElementById('form-kelompok-keluarga').value;
     const selAnggota = document.getElementById('form-anggota');
@@ -353,7 +364,6 @@ function filterAnggotaForm() {
     });
 }
 
-// Auto isi Nama, KK, dan Hitung Nominal saat Anggota diklik
 function autofillAnggota() {
     const idDipilih = document.getElementById('form-anggota').value;
     if(!idDipilih) return;
@@ -362,10 +372,7 @@ function autofillAnggota() {
     if(anggota) {
         document.getElementById('form-nama-pihak').value = anggota.nama_anggota;
         document.getElementById('form-jenis-kk').value = anggota.status_kk;
-        
-        // Reset periode ke 1 setiap ganti orang
         document.getElementById('form-jumlah-periode').value = "1";
-        
         kalkulasiNominalKK();
     }
 }
@@ -385,7 +392,6 @@ function kalkulasiNominalKK() {
             return;
         }
     }
-    
     formNominal.value = "";
     hintNominal.classList.add('hidden');
 }
@@ -428,7 +434,7 @@ async function simpanDataTransaksi() {
         jenis: document.getElementById('form-jenis').value, kategori: kategoriForm,
         nama_pihak: document.getElementById('form-nama-pihak').value.trim(),
         id_anggota: document.getElementById('form-anggota').value,
-        kelompok: document.getElementById('form-kelompok-keluarga').value, // Simpan gabungannya
+        kelompok: document.getElementById('form-kelompok-keluarga').value, 
         jenis_kk: document.getElementById('form-jenis-kk').value,
         jenis_pembayaran: document.getElementById('form-pembayaran').value,
         nominal: document.getElementById('form-nominal').value,

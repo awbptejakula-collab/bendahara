@@ -1,8 +1,8 @@
 // ==========================================
 // KONFIGURASI 
 // ==========================================
-// PASTE URL WEB APP BARU ANDA DI BAWAH INI:
-const GAS_URL = "https://script.google.com/macros/s/AKfycbyYVyWUnwtZaY1IeI4EigdtxcvjBYmqHIQlKhZzs0UcIrU5nSU-ikafbvpyUgsY3roh/exec"; 
+// PASTE URL WEB APP ANDA DI SINI:
+const GAS_URL = "PASTE_URL_WEB_APP_ANDA_DISINI"; 
 
 let currentUserRole = "";
 let dataKategori = [];
@@ -99,7 +99,6 @@ async function tarikDataReferensi() {
         let jsonAng = await resAng.json();
         if(jsonAng.status === 'ok') {
             dataAnggota = jsonAng.data;
-            // Isi dropdown anggota
             let selAng = document.getElementById('form-anggota');
             selAng.innerHTML = '<option value="">-- Pilih Anggota --</option>';
             dataAnggota.forEach(a => { selAng.innerHTML += `<option value="${a.id_anggota}">${a.nama_anggota}</option>`; });
@@ -118,12 +117,12 @@ function bukaFormTransaksi() {
     document.getElementById('form-nominal').value = "";
     document.getElementById('form-keterangan').value = "";
     document.getElementById('form-nama-pihak').value = "";
+    document.getElementById('form-jumlah-periode').value = "1"; // Reset periode ke 1
     
     document.getElementById('form-foto').value = "";
     document.getElementById('preview-foto').classList.add('hidden');
     base64FotoTemp = "";
 
-    // Reset dropdown jenis ke Pendapatan dan jalankan filter
     document.getElementById('form-jenis').value = "Pendapatan";
     gantiJenis();
 }
@@ -139,7 +138,6 @@ function gantiJenis() {
     const inputPihak = document.getElementById('form-nama-pihak');
     const dropdownKat = document.getElementById('form-kategori');
 
-    // 1. Ubah Label (Nama Pembayar vs Nama Penerima)
     if (jenis === "Pendapatan") {
         labelPihak.innerText = "Nama Pembayar / Penyetor:";
         inputPihak.placeholder = "Contoh: Bpk. Wayan";
@@ -148,12 +146,10 @@ function gantiJenis() {
         inputPihak.placeholder = "Contoh: Toko Bangunan / Tukang";
     }
 
-    // 2. Filter Dropdown Kategori dengan fitur "Fallback" (jika koneksi lambat)
     dropdownKat.innerHTML = "";
     let filterKat = dataKategori.filter(k => k.jenis === jenis);
     
     if (filterKat.length === 0) {
-        // Fallback Data Standar
         if (jenis === "Pendapatan") filterKat = [{nama: "Iuran Wajib"}, {nama: "Sukarela/Punia"}];
         else filterKat = [{nama: "Operasional Ngaben"}, {nama: "Santunan Ngaben"}, {nama: "Pemeliharaan Alat"}];
     }
@@ -164,7 +160,6 @@ function gantiJenis() {
         dropdownKat.appendChild(opt);
     });
 
-    // 3. Panggil gantiKategori untuk mengecek apakah Iuran Wajib terpilih
     gantiKategori();
 }
 
@@ -173,22 +168,27 @@ function gantiKategori() {
     const grupIuran = document.getElementById('grup-iuran');
     const formNominal = document.getElementById('form-nominal');
     const formJenisKK = document.getElementById('form-jenis-kk');
+    const formPeriode = document.getElementById('form-jumlah-periode');
+    const hintNominal = document.getElementById('hint-nominal');
 
     if (kategori === "Iuran Wajib") {
         grupIuran.classList.remove('hidden');
-        kalkulasiNominalKK(); // Kunci otomatis jika sudah ada pilihan
+        kalkulasiNominalKK(); 
     } else {
         grupIuran.classList.add('hidden');
         formJenisKK.value = "";
+        formPeriode.value = "1";
         formNominal.value = "";
-        formNominal.readOnly = false;
-        formNominal.style.backgroundColor = "#ffffff";
+        hintNominal.classList.add('hidden'); 
     }
 }
 
+// LOGIKA BARU: MENGALIKAN TARIF DENGAN JUMLAH PERIODE
 function kalkulasiNominalKK() {
     const jenisKK = document.getElementById('form-jenis-kk').value;
+    const jumlahPeriode = parseInt(document.getElementById('form-jumlah-periode').value) || 1;
     const formNominal = document.getElementById('form-nominal');
+    const hintNominal = document.getElementById('hint-nominal');
     
     const tarifKK = {
         "KK 01": 50000, "KK 02": 100000, 
@@ -197,13 +197,19 @@ function kalkulasiNominalKK() {
     };
 
     if (tarifKK[jenisKK]) {
-        formNominal.value = tarifKK[jenisKK];
-        formNominal.readOnly = true;
-        formNominal.style.backgroundColor = "#eef2f3"; // Warna abu-abu (terkunci)
+        // Otomatis Kalikan Tarif dengan Periode
+        formNominal.value = tarifKK[jenisKK] * jumlahPeriode;
+        
+        // Sesuaikan teks petunjuk
+        if (jumlahPeriode > 1) {
+            hintNominal.innerText = `* Tarif Rp ${tarifKK[jenisKK].toLocaleString('id-ID')} dikali ${jumlahPeriode} periode. Bisa diedit jika kolektif.`;
+        } else {
+            hintNominal.innerText = "* Nominal terhitung otomatis. Anda masih bisa mengubahnya manual jika ada pembayaran kolektif.";
+        }
+        hintNominal.classList.remove('hidden'); 
     } else {
         formNominal.value = "";
-        formNominal.readOnly = false;
-        formNominal.style.backgroundColor = "#ffffff";
+        hintNominal.classList.add('hidden');
     }
 }
 
@@ -243,18 +249,27 @@ function previewFoto(event) {
 // FUNGSI SIMPAN KE SERVER
 // ==========================================
 async function simpanDataTransaksi() {
+    const kategoriForm = document.getElementById('form-kategori').value;
+    const periodeForm = parseInt(document.getElementById('form-jumlah-periode').value) || 1;
+    let keteranganForm = document.getElementById('form-keterangan').value.trim();
+
+    // SIsipkan catatan periode otomatis ke dalam kolom keterangan jika lebih dari 1
+    if (kategoriForm === "Iuran Wajib" && periodeForm > 1) {
+        keteranganForm = `[Bayar ${periodeForm} Periode] ` + keteranganForm;
+    }
+
     const payload = {
         role: currentUserRole,
         tanggal: document.getElementById('form-tanggal').value,
         jenis: document.getElementById('form-jenis').value,
-        kategori: document.getElementById('form-kategori').value,
+        kategori: kategoriForm,
         nama_pihak: document.getElementById('form-nama-pihak').value.trim(),
         id_anggota: document.getElementById('form-anggota').value,
         kelompok: document.getElementById('form-kelompok').value,
         jenis_kk: document.getElementById('form-jenis-kk').value,
         jenis_pembayaran: document.getElementById('form-pembayaran').value,
         nominal: document.getElementById('form-nominal').value,
-        keterangan: document.getElementById('form-keterangan').value,
+        keterangan: keteranganForm, // Menggunakan keterangan yang sudah dimodifikasi
         foto_base64: base64FotoTemp 
     };
 

@@ -2,7 +2,7 @@
 // KONFIGURASI 
 // ==========================================
 // PASTE URL WEB APP ANDA DI SINI:
-const GAS_URL = "PASTE_URL_WEB_APP_ANDA_DISINI"; 
+const GAS_URL = "https://script.google.com/macros/s/AKfycbyYVyWUnwtZaY1IeI4EigdtxcvjBYmqHIQlKhZzs0UcIrU5nSU-ikafbvpyUgsY3roh/exec"; 
 
 let currentUserRole = "";
 let dataKategori = [];

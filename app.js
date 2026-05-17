@@ -1,41 +1,74 @@
-// --- KONFIGURASI ---
-// PENTING: Paste URL Apps Script Anda di bawah ini!
+// ==========================================
+// KONFIGURASI UTAMA
+// ==========================================
+// Paste URL Web App dari Google Apps Script di bawah ini:
 const GAS_URL = "https://script.google.com/macros/s/AKfycbyYVyWUnwtZaY1IeI4EigdtxcvjBYmqHIQlKhZzs0UcIrU5nSU-ikafbvpyUgsY3roh/exec"; 
+
 let currentUserRole = "";
 
-// Database user sederhana untuk uji coba
-const dataUser = {
-    "admin": { password: "123", role: "Admin" },
-    "benda1": { password: "123", role: "Bendahara 1" },
-    "benda2": { password: "123", role: "Bendahara 2" }
-};
-
-// --- FUNGSI NAVIGASI & LOGIN ---
-function prosesLogin() {
+// ==========================================
+// FUNGSI NAVIGASI & LOGIN
+// ==========================================
+async function prosesLogin() {
     const user = document.getElementById('input-username').value.trim();
     const pass = document.getElementById('input-password').value.trim();
     const errorMsg = document.getElementById('login-error');
+    
+    // Validasi input kosong
+    if (!user || !pass) {
+        errorMsg.innerText = "Username dan password harus diisi!";
+        errorMsg.classList.remove('hidden');
+        return;
+    }
 
-    // Cek apakah username ada di database dan passwordnya cocok
-    if (dataUser[user] && dataUser[user].password === pass) {
-        // Jika Berhasil
-        currentUserRole = dataUser[user].role;
-        
-        // Bersihkan kolom input
-        document.getElementById('input-username').value = "";
-        document.getElementById('input-password').value = "";
-        errorMsg.classList.add('hidden'); // Sembunyikan pesan error
+    // Ubah tombol jadi status loading
+    const btn = document.querySelector('button[onclick="prosesLogin()"]');
+    btn.innerText = "Memeriksa...";
+    btn.disabled = true;
 
-        // Pindah halaman
-        document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('dashboard-screen').classList.remove('hidden');
-        document.getElementById('welcome-text').innerText = "Buku Kas - Akses: " + currentUserRole;
+    try {
+        // Mengirim data rahasia lewat POST ke Backend GAS
+        const response = await fetch(GAS_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                action: 'login',
+                payload: { username: user, password: pass }
+            }),
+            headers: {
+                "Content-Type": "text/plain;charset=utf-8", 
+            }
+        });
         
-        // Tarik data
-        loadBukuKas();
-    } else {
-        // Jika Gagal
-        errorMsg.classList.remove('hidden'); // Munculkan pesan error
+        const result = await response.json();
+
+        // Jika GAS merespon login sukses
+        if (result.status === 'ok' && result.data.status === 'success') {
+            currentUserRole = result.data.role;
+            
+            // Bersihkan form
+            document.getElementById('input-username').value = "";
+            document.getElementById('input-password').value = "";
+            errorMsg.classList.add('hidden');
+
+            // Pindah ke Dashboard
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('dashboard-screen').classList.remove('hidden');
+            document.getElementById('welcome-text').innerText = "Buku Kas - Akses: " + currentUserRole;
+            
+            // Otomatis tarik data kas
+            loadBukuKas();
+        } else {
+            // Jika login gagal (user/pass salah)
+            errorMsg.innerText = result.data.message || "Login gagal!";
+            errorMsg.classList.remove('hidden');
+        }
+    } catch (error) {
+        errorMsg.innerText = "Gagal terhubung ke server. Periksa koneksi internet.";
+        errorMsg.classList.remove('hidden');
+    } finally {
+        // Kembalikan tombol seperti semula
+        btn.innerText = "Masuk";
+        btn.disabled = false;
     }
 }
 
@@ -43,10 +76,12 @@ function logout() {
     currentUserRole = "";
     document.getElementById('dashboard-screen').classList.add('hidden');
     document.getElementById('login-screen').classList.remove('hidden');
-    document.getElementById('tabel-kas').innerHTML = ""; // Bersihkan tabel
+    document.getElementById('tabel-kas').innerHTML = ""; // Bersihkan memori tabel
 }
 
-// --- FUNGSI API (KONEKSI KE DATABASE) ---
+// ==========================================
+// FUNGSI API (KONEKSI KE DATABASE / GET BUKU KAS)
+// ==========================================
 async function loadBukuKas() {
     const loadingText = document.getElementById('loading-text');
     const tabelKas = document.getElementById('tabel-kas');
@@ -71,7 +106,9 @@ async function loadBukuKas() {
     }
 }
 
-// --- FUNGSI TAMPILAN ---
+// ==========================================
+// FUNGSI TAMPILAN
+// ==========================================
 function tampilkanDataKeTabel(data) {
     const tabelKas = document.getElementById('tabel-kas');
     
